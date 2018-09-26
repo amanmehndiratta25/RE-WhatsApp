@@ -11,6 +11,12 @@ I'll be adding more content as I have more free time.
 
 - [Key generation](#key-generation)
 - [Registration](#registration)
+  - [Registration. Scenario 1](#registration-scenario-1)
+  - [Registration. Scenario 2](#registration-scenario-2)
+  - [Check if number already was registered](#check-if-number-already-was-registered)
+  - [Request registration code](#request-registration-code)
+  - [Send registration code](#send-registration-code)
+
 
 
 ## Key generation
