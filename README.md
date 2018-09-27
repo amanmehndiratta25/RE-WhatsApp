@@ -16,6 +16,9 @@ I'll be adding more content as I have more free time.
   - [Check if number already was registered](#check-if-number-already-was-registered)
   - [Request registration code](#request-registration-code)
   - [Send registration code](#send-registration-code)
+  - [Registration token](#registration-token)
+    	- [iOS Token](#ios-token)
+  		- [Android Token](#android-token)
 
 
 
@@ -38,7 +41,7 @@ SignedPreKeyRecord signedPreKey    = KeyHelper.generateSignedPreKey(identityKeyP
 
 ## Registration
 
-Depending if the number was already registered or not with a concrete device, there will be two possible scenarios.
+Depending on the number was already registered or not with a concrete device, there will be two possible scenarios.
 
 ### Registration. Scenario 1
 
@@ -63,13 +66,13 @@ Parameters:
 - `in`: Phone number without country code
 - `lg`: Language
 - `lc`: Language code
-- `authkey`: User public key
-- `e_regid`: Libsignal registration id
-- `e_keytype`: [DJB Curve25519 key type](https://github.com/signalapp/libsignal-protocol-java/blob/master/java/src/main/java/org/whispersystems/libsignal/ecc/Curve.java#L17) (`0x05`)
-- `e_ident`: Serialized public key
-- `e_skey_id`: Signed prekey id
-- `e_skey_val`: Signed prekey value
-- `e_skey_sig`: Signed prekey signature
+- `authkey`: User public key (b64 encoded)
+- `e_regid`: Libsignal registration id (b64 encoded)
+- `e_keytype`: [DJB Curve25519 key type](https://github.com/signalapp/libsignal-protocol-java/blob/master/java/src/main/java/org/whispersystems/libsignal/ecc/Curve.java#L17) (`0x05`) (b64 encoded)
+- `e_ident`: Serialized public key (b64 encoded)
+- `e_skey_id`: Signed prekey id (b64 encoded)
+- `e_skey_val`: Signed prekey value (b64 encoded)
+- `e_skey_sig`: Signed prekey signature (b64 encoded)
 - `id`: Identity or recovery token
 
 All these parameters are encrypted and sent to WhatsApp in a GET request. The parameters are formatted as a query before encryption:
@@ -137,20 +140,22 @@ Parameters:
 - `sim_mcc`: MCC from the SIM
 - `sim_mnc`: MNC from the SIM
 - `method`: `sms` or `voice`.
-- `reason`: Empty
+- `reason`: `jailbroken` if device is jailbroken, else empty
 - `token`: Token
-- `authkey`: User public key
-- `e_regid`: Libsignal registration id
-- `e_keytype`: [DJB Curve25519 key type](https://github.com/signalapp/libsignal-protocol-java/blob/master/java/src/main/java/org/whispersystems/libsignal/ecc/Curve.java#L17) (`0x05`)
-- `e_ident`: Serialized public key
-- `e_skey_id`: Signed prekey id
-- `e_skey_val`: Signed prekey value
-- `e_skey_sig`: Signed prekey signature
+- `authkey`: User public key (b64 encoded)
+- `e_regid`: Libsignal registration id (b64 encoded)
+- `e_keytype`: [DJB Curve25519 key type](https://github.com/signalapp/libsignal-protocol-java/blob/master/java/src/main/java/org/whispersystems/libsignal/ecc/Curve.java#L17) (`0x05`) (b64 encoded)
+- `e_ident`: Serialized public key (b64 encoded)
+- `e_skey_id`: Signed prekey id (b64 encoded)
+- `e_skey_val`: Signed prekey value (b64 encoded)
+- `e_skey_sig`: Signed prekey signature (b64 encoded)
 - `network_radio_type`: Network radio type
 - `simnum`: `1` if [MSISDN](http://www.qtc.jp/3GPP/Specs/23003-3e0.pdf) length > 6, else `0`
-- `hasinrc`: `1` if rc2 file exists, else `0`
+- `hasinrc`: `1` if rc file exists, else `0`
 - `pid`: Process ID
 - `rc`: Release type
+- `id`: Identity or recovery token
+
 
 #### Network radio type
 
@@ -174,10 +179,10 @@ Detects which type of radio network the client is using. The client uses `Networ
 
 #### rc
 
-- release: `1`
-- beta: `2`
-- alpha: `3`
-- debug: `4`
+- release: `0`
+- beta: `1`
+- alpha: `2`
+- debug: `3`
 
 
 
@@ -195,13 +200,13 @@ Parameters:
 - `in`: Phone number without country code
 - `lg`: Language
 - `lc`: Language code
-- `authkey`: User public key
-- `e_regid`: Libsignal registration id
-- `e_keytype`: [DJB Curve25519 key type](https://github.com/signalapp/libsignal-protocol-java/blob/master/java/src/main/java/org/whispersystems/libsignal/ecc/Curve.java#L17) (`0x05`)
-- `e_ident`: Serialized public key
-- `e_skey_id`: Signed prekey id
-- `e_skey_val`: Signed prekey value
-- `e_skey_sig`: Signed prekey signature
+- `authkey`: User public key (b64 encoded)
+- `e_regid`: Libsignal registration id (b64 encoded)
+- `e_keytype`: [DJB Curve25519 key type](https://github.com/signalapp/libsignal-protocol-java/blob/master/java/src/main/java/org/whispersystems/libsignal/ecc/Curve.java#L17) (`0x05`) (b64 encoded)
+- `e_ident`: Serialized public key (b64 encoded)
+- `e_skey_id`: Signed prekey id (b64 encoded)
+- `e_skey_val`: Signed prekey value (b64 encoded)
+- `e_skey_sig`: Signed prekey signature (b64 encoded)
 - `id`: Identity or recovery token
 - `code`: Received code (xxxxxx)
 - `entered`: `1`
@@ -211,3 +216,78 @@ Request URL: `https://v.whatsapp.net/v2/register`
 GET Param: 
 
 - `ENC`: Base64 encoded value of final output (URL safe).
+
+
+### Registration token
+
+#### iOS
+
+- `waString`: `0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM`
+
+Token: `md5(waString + md5(app package) + Phone number without country code)`
+
+Example:
+
+```python
+import hashlib
+
+waString = "0a1mLfGUIBVrMKF1RdvLI5lkRBvof6vn0fD2QRSM" # Static
+packageMD5 = "a200e8c6b58fda4c7d569aacfa2119a7" # Changes
+number = "000000000"
+
+token = hashlib.md5((waString+packageMD5+number).encode('utf-8')).hexdigest()
+```
+
+#### Android
+
+- waPrefix: `Y29tLndoYXRzYXBw`
+- Signature: `MIIDMjCCAvCgAwIBAgIETCU2pDALBgcqhkjOOAQDBQAwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC1NhbnRhIENsYXJhMRYwFAYDVQQKEw1XaGF0c0FwcCBJbmMuMRQwEgYDVQQLEwtFbmdpbmVlcmluZzEUMBIGA1UEAxMLQnJpYW4gQWN0b24wHhcNMTAwNjI1MjMwNzE2WhcNNDQwMjE1MjMwNzE2WjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEUMBIGA1UEBxMLU2FudGEgQ2xhcmExFjAUBgNVBAoTDVdoYXRzQXBwIEluYy4xFDASBgNVBAsTC0VuZ2luZWVyaW5nMRQwEgYDVQQDEwtCcmlhbiBBY3RvbjCCAbgwggEsBgcqhkjOOAQBMIIBHwKBgQD9f1OBHXUSKVLfSpwu7OTn9hG3UjzvRADDHj+AtlEmaUVdQCJR+1k9jVj6v8X1ujD2y5tVbNeBO4AdNG/yZmC3a5lQpaSfn+gEexAiwk+7qdf+t8Yb+DtX58aophUPBPuD9tPFHsMCNVQTWhaRMvZ1864rYdcq7/IiAxmd0UgBxwIVAJdgUI8VIwvMspK5gqLrhAvwWBz1AoGBAPfhoIXWmz3ey7yrXDa4V7l5lK+7+jrqgvlXTAs9B4JnUVlXjrrUWU/mcQcQgYC0SRZxI+hMKBYTt88JMozIpuE8FnqLVHyNKOCjrh4rs6Z1kW6jfwv6ITVi8ftiegEkO8yk8b6oUZCJqIPf4VrlnwaSi2ZegHtVJWQBTDv+z0kqA4GFAAKBgQDRGYtLgWh7zyRtQainJfCpiaUbzjJuhMgo4fVWZIvXHaSHBU1t5w//S0lDK2hiqkj8KpMWGywVov9eZxZy37V26dEqr/c2m5qZ0E+ynSu7sqUD7kGx/zeIcGT0H+KAVgkGNQCo5Uc0koLRWYHNtYoIvt5R3X6YZylbPftF/8ayWTALBgcqhkjOOAQDBQADLwAwLAIUAKYCp0d6z4QQdyN74JDfQ2WCyi8CFDUM4CaNB+ceVXdKtOrNTQcc0e+t`
+- Salt: `PkTwKSZqUfAUyR0rPQ8hYJ0wNsQQ3dW1+3SCnyTXIfEAxxS75FwkDf47wNv/c8pP3p0GXKR6OOQmhyERwx74fw1RYSU10I4r1gyBVDbRJ40pidjM41G1I1oN`
+- `about_logo.png`: Image inside apk. You can find [here](https://github.com/mgp25/RE-WhatsApp/Android/about_logo.png).
+- classesMD5: MD5 hash of `classes.dex`. You can use a tool I made to get this value. [classesMD5-64](https://github.com/mgp25/classesMD5-64).
+
+Example:
+
+```python
+import hashlib
+import pbkdf2
+import base64
+
+waStringDecoded = base64.b64decode(waString)
+saltDecoded = base64.b64decode(salt)
+
+with open("about_logo.png", "rb") as imageFile:
+  f = imageFile.read()
+  imageBytes = bytearray(f)
+
+password = waStringDecoded + imageBytes
+
+key = pbkdf2.pbkdf2(hashlib.sha1, password, saltDecoded, 128, 80)
+
+keyDecoded = bytearray(base64.b64decode(key))
+sigDecoded = base64.b64decode(signature)
+clsDecoded = base64.b64decode(classesMD5)
+
+data = sigDecoded + clsDecoded + number
+
+opad = bytearray()
+ipad = bytearray()
+for i in range(0, 64):
+    opad.append(0x5C ^ key[i])
+    ipad.append(0x36 ^ key[i])
+hash = hashlib.sha1()
+subHash = hashlib.sha1()
+
+subHash.update(ipad + data)
+hash.update(opad + subHash.digest())
+subHash.update(bytes(ipad + data))
+hash.update(bytes(opad + subHash.digest()))
+
+token = base64.b64encode(hash.digest())
+```
+
+To save some steps, you can use the precalculated key (you need to b64 decode it):
+
+key: `eQV5aq/Cg63Gsq1sshN9T3gh+UUp0wIw0xgHYT1bnCjEqOJQKCRrWxdAe2yvsDeCJL+Y4G3PRD2HUF7oUgiGo8vGlNJOaux26k+A2F3hj8A=`
+
+
