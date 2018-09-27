@@ -13,7 +13,7 @@ I'll be adding more content as I have more free time.
 - [Registration](#registration)
   - [Registration. Scenario 1](#registration-scenario-1)
   - [Registration. Scenario 2](#registration-scenario-2)
-  - [Check if number already was registered](#check-if-number-already-was-registered)
+  - [Check if number was already registered](#check-if-number-was-already-registered)
   - [Request registration code](#request-registration-code)
   - [Send registration code](#send-registration-code)
   - [Registration token](#registration-token)
@@ -55,7 +55,7 @@ The number was already registered using that device, therefore the client has th
 
 <img src="https://i.imgur.com/BeqfVFH.png">
 
-### Check if number already was registered
+### Check if number was already registered
 
 For this purpose, it uses a parameter called `id` which is the identity or as I like to call it, recovery token. It is generated using pseudo random bytes (20 bytes), and then is stored encrypted in the device.
 
@@ -126,7 +126,7 @@ https://v.whatsapp.net/v2/exist?ENC=4maAaXTGZ4aeSql_Gu-QmGdxlJVjKdhafxx0tTfEc1Eg
 
 ### Request registration code
 
-Parameters are encrypted the same way as explained in [Check if number already was registered](#check-if-number-was-already-registered).
+Parameters are encrypted the same way as explained in [Check if number was already registered](#check-if-number-was-already-registered).
 
 Parameters:
 
