@@ -9,7 +9,7 @@ $phone        = "000000000"; // Number without country code.
 $imageBytes =  file_get_contents('about_logo.png');
 
 $password = base64_decode($waPrefix) . $imageBytes;
-$key = pbkdf2('sha1', $password, base64_decode($salt), 128, 80, true);
+$key = hash_pbkdf2('sha1', $password, base64_decode($salt), 128, 80, true);
 
 $data = base64_decode($signature) . base64_decode($classesMd5) . $phone;
 
