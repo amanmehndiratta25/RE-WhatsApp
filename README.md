@@ -19,6 +19,9 @@ I'll be adding more content as I have more free time.
   - [Registration token](#registration-token)
     - [iOS Token](#ios-token)
   	- [Android Token](#android-token)
+  - [Recovery token](#recovery-token)
+   - [iOS Recovery token](#ios-recovery-token)
+   - [Android Recovery token](#android-recovery-token)
 
 
 
@@ -290,4 +293,165 @@ To save some steps, you can use the precalculated key (you need to b64 decode it
 
 key: `eQV5aq/Cg63Gsq1sshN9T3gh+UUp0wIw0xgHYT1bnCjEqOJQKCRrWxdAe2yvsDeCJL+Y4G3PRD2HUF7oUgiGo8vGlNJOaux26k+A2F3hj8A=`
 
+
+### Recovery token
+
+See [Registration. Scenario 2](#registration-scenario-2).
+
+The recovery token is used to identify an already registed user in a specific device, and it changes if the account is activated in other device.
+
+In case the user needs to reinstall the app in the device for whatever reason, it won't go for all registration steps (no token and no SMS). WhatsApp server will give the client a new password directly just by knowing the number and the recovery token.
+
+The recovery token is stored in:
+
+- Android: `/data/data/com.whatsapp/files/rc2`
+- iOS: `/var/mobile/Containers/Data/Application/<App UUID>/Library/rc.dat`
+
+#### iOS Recovery token
+
+- `rc.dat` content (hex):
+
+`253338253130253842254531253344254231254235253732253146253944254445253945253630253232253837253438`
+
+Which in ascii is just the recovery token, no encryption, just as easy as this:
+
+Recovery token: `%38%10%8B%E1%3D%B1%B5%72%1F%9D%DE%9E%60%22%87%48`
+
+#### Android Recovery token
+
+Steps:
+
+1. Read rc2 and read Java Object.
+2. From the unserialized data, we obtain: header, iv, salt and encrypted data values.
+3. Get the password:
+
+`Password = RC_SECRET + regex(number) + account_name`
+
+4. We obtain the key to decrypt the data by deriving the password using pbkdf2 (sha1).
+5. Finally, we can decrypt the data using the derived key and using AES 128 OFB.
+6. The recovery token is the decrypted data urlencoded.
+
+Example: 
+
+```python
+import re
+import base64
+import hashlib
+from Crypto.Cipher import AES
+from binascii import hexlify, unhexlify
+import urllib.parse
+
+class WhatsAppSecurity:
+
+    RECOVERY_TOKEN_HEADER = b"\x00\x02"
+
+    def __init__(self, phone_number, google_play_email = ""):
+        self.pn = phone_number
+        self.email = google_play_email
+
+    def get_recovery_token(self, rc_data):
+        secret = WhatsAppData().get_rc_secret() + self.get_recovery_jid_from_jid(self.pn) + self.email;
+        return self.get_encrypted_data(secret, rc_data)
+
+    def get_rc_file_data(self, recovery_token_file):
+        with open(recovery_token_file, 'rb') as f:
+            read_data = f.read()
+        return read_data
+
+    def get_encrypted_data(self, secret, data):
+        data = data[27:]
+        header = data[:2]
+        salt = data[2:6]
+        iv = data[6:22]
+        encrypted_data = data[22:42]
+
+        if header != self.RECOVERY_TOKEN_HEADER:
+            raise Exception('Header mismatch')
+
+        key = self.get_key(secret, salt)
+        cipher = AES.new(key, AES.MODE_OFB, iv)
+
+        return cipher.decrypt(encrypted_data)
+
+    def get_key(self, secret, salt):
+        return hashlib.pbkdf2_hmac('sha1', bytes(secret, 'utf-8'), salt, 16, 16)
+
+    def get_recovery_jid_from_jid(self, phone_number):
+        c = re.compile("^([17]|2[07]|3[0123469]|4[013456789]|5[12345678]|6[0123456]|8[1246]|9[0123458]|\d{3})\d*?(\d{4,6})$")
+        g = c.match(phone_number)
+
+        if g is not None:
+            return g.group(1) + g.group(2)
+        else:
+            return ""
+
+class WhatsAppData:
+
+    def __init__(self):
+        self.RC_SECRET = self.decode("A\u0004\u001d@\u0011\u0018V\u0091\u0002\u0090\u0088\u009f\u009eT(3{;ES")
+
+    def decode(self, s):
+        sb = []
+        for i in range(len(s)):
+            sb.append(self.sxor("\u0012", s[i]))
+        return ''.join(sb)
+
+
+    def sxor(self, s1, s2):
+        # convert strings to a list of character pair tuples
+        # go through each tuple, converting them to ASCII code (ord)
+        # perform exclusive or on the ASCII code
+        # then convert the result back to ASCII (chr)
+        # merge the resulting array of characters as a string
+        return ''.join(chr(ord(a) ^ ord(b)) for a,b in zip(s1,s2))
+
+    def get_rc_secret(self):
+        return self.RC_SECRET
+
+
+phone_number = '34123456789' # country_code + number
+account_name = '' # Google Play Email. If not set, don't change this value.
+
+ws = WhatsAppSecurity(phone_number, '')
+rc_data = ws.get_rc_file_data('rc2') # Opening and reading rc2 file data
+
+recovery_token = ws.get_recovery_token(rc_data)
+
+print(urllib.parse.quote_plus(recovery_token))
+```
+
+## Shared Data
+
+### iOS Shared Data
+
+Data stored locally in `NSUserDefaults` are encrypted using AES 128 CBC. 
+
+- String key: `s.whatsapp.net`
+- IV: `\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`
+
+Example:
+
+```python
+from Crypto.Cipher import AES
+from binascii import hexlify, unhexlify
+import hashlib
+import base64
+
+country_code = "34"
+waString = "s.whatsapp.net"
+
+md5 = hashlib.md5(waString.encode('utf-8')).hexdigest()
+key = bytes(md5[:16], 'utf-8')
+
+BLOCK_SIZE = 16 # AES 128 CBC
+
+data = bytes(country_code, 'utf-8')
+padding_length = BLOCK_SIZE - len(data)
+pad_data = data + bytes(chr(padding_length), 'utf-8') * padding_length
+iv = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+cipher = AES.new(key, AES.MODE_CBC, iv)
+
+encrypted_data = base64.b64encode(cipher.encrypt(pad_data))
+print(encrypted_data)
+```
 
