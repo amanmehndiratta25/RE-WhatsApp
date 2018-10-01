@@ -20,8 +20,8 @@ I'll be adding more content as I have more free time.
     - [iOS Token](#ios-token)
   	- [Android Token](#android-token)
   - [Recovery token](#recovery-token)
-   - [iOS Recovery token](#ios-recovery-token)
-   - [Android Recovery token](#android-recovery-token)
+    - [iOS Recovery token](#ios-recovery-token)
+    - [Android Recovery token](#android-recovery-token)
 
 
 
