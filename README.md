@@ -84,16 +84,16 @@ All these parameters are encrypted and sent to WhatsApp in a GET request. The pa
 
 The encryption is based on Diffie-Hellman key exchange:
 
-1. Get user public key
+1. Get user private key
 2. Get server public key
 3. Calculate agreement
 4. Use agreement to encrypt communication using symmetric key cipher.
 
 ```java
-ECPublicKey userPublicKey = Curve.decodePoint(alicePublic, 0);
-ECPrivateKey serverPrivateKey = Curve.decodePrivatePoint(alicePrivate);
+ECPublicKey userPrivateKey = Curve.decodePoint(userPrivate, 0);
+ECPrivateKey serverPublicKey = Curve.decodePrivatePoint(serverPublic);
 
-byte[] sharedOne = Curve.calculateAgreement(userPublicKey, serverPrivateKey);
+byte[] sharedOne = Curve.calculateAgreement(userPrivateKey, serverPublicKey);
 ```
 
 WhatsApp server public key: 
@@ -111,7 +111,7 @@ Sample output (hex string):
 
 **Note**: Auth tag is added.
 
-To this output, user public key is appended in the beginning. Final output:
+To this output, user public key is appended at the beginning. Final output:
 
 - `<user public key> +  <Encrypted data>`
 
