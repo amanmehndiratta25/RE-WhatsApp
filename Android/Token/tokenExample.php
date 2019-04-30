@@ -9,18 +9,20 @@ $phone        = "000000000"; // Number without country code.
 $imageBytes =  file_get_contents('about_logo.png');
 
 $password = base64_decode($waPrefix) . $imageBytes;
-$key = hash_pbkdf2('sha1', $password, base64_decode($salt), 128, 80, true);
+$key = hash_pbkdf2('sha1', $password, base64_decode($salt), 0x80, 0x200, true);
 
 $data = base64_decode($signature) . base64_decode($classesMd5) . $phone;
 
-$opad = str_repeat(chr(0x5C), 64);
-$ipad = str_repeat(chr(0x36), 64);
+//$opad = str_repeat(chr(0x5C), 64);
+//$ipad = str_repeat(chr(0x36), 64);
 
-for ($i = 0; $i < 64; $i++) {
-    $opad[$i] = $opad[$i] ^ $key[$i];
-    $ipad[$i] = $ipad[$i] ^ $key[$i];
-}
+//for ($i = 0; $i < 64; $i++) {
+//    $opad[$i] = $opad[$i] ^ $key[$i];
+//    $ipad[$i] = $ipad[$i] ^ $key[$i];
+//}
 
-$output = hash("sha1", $opad . hash("sha1", $ipad . $data, true), true);
+$output = hash_hmac('sha1', $data, $key, true);
 
-$token = base64_encode($output);
+//$output = hash("sha1", $opad . hash("sha1", $ipad . $data, true), true); actually that padding is not used in my version
+
+$token = base64_encode($output); //just base
